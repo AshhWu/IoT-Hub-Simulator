@@ -44,3 +44,48 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
+
+
+/////////////////////
+// Device to Cloud //
+/////////////////////
+'use strict';
+
+var clientFromConnectionString = require('azure-iot-device-mqtt').clientFromConnectionString;
+var Message = require('azure-iot-device').Message;
+
+var connectionString = 'HostName=vjeche1iotagain36e749a8cfae42e58ef5ffececdf0bac.azure-devices.net;DeviceId=test;SharedAccessKeyName=iothubowner;SharedAccessKey=JDfCncihxzZynygNYZ+pGjQlxmm0c9bQcB6FI+DppZc=';
+
+var client = clientFromConnectionString(connectionString);
+
+//display output
+function printResultFor(op) {
+  return function printResult(err, res) {
+    if (err) console.log(op + ' error: ' + err.toString());
+    if (res) console.log(op + ' status: ' + res.constructor.name);
+  };
+}
+
+//send a message to IoT hub every second
+var connectCallback = function (err) {
+  if (err) {
+    console.log('Could not connect: ' + err);
+  } else {
+    console.log('Client connected');
+
+    // Create a message and send it to the IoT Hub every second
+    setInterval(function(){
+        var temperature = 20 + (Math.random() * 15);
+        var humidity = 60 + (Math.random() * 20);
+        var CO2 = 550 + (Math.random() * 20);;            
+        var data = JSON.stringify({ deviceId: 'test', temperature: temperature, humidity: humidity, CO2: CO2});
+        var message = new Message(data);
+        message.properties.add('temperatureAlert', (temperature > 25) ? 'true' : 'false');
+        console.log("Sending message: " + message.getData());
+        client.sendEvent(message, printResultFor('send'));
+    }, 1000);
+  }
+};
+
+client.open(connectCallback);
